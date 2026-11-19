@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Controle de Estoque</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+    <strong>Controle de Estoque</strong>
+    <nav id="menu"></nav>
+    <span id="usuario"></span>
+    <a href="/swagger-ui.html" target="_blank">API</a>
+    <button onclick="sair()">Sair</button>
+</header>
+
+<main>
+    <h2 id="titulo"></h2>
+    <p id="mensagem" class="erro" hidden></p>
+
+    <form id="formulario" class="card"></form>
+
+    <table>
+        <thead id="cabecalho"></thead>
+        <tbody id="linhas"></tbody>
+    </table>
+</main>
+
+<script src="/app.js"></script>
+</body>
+</html>

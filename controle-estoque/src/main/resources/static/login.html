@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login - Controle de Estoque</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body class="login">
+<form method="post" action="/login" class="card">
+    <h1>Controle de Estoque</h1>
+    <p id="erro" class="erro" hidden>Login ou senha invalidos.</p>
+    <label>Login <input name="username" required autofocus></label>
+    <label>Senha <input name="password" type="password" required></label>
+    <button type="submit">Entrar</button>
+    <small>admin / admin123 &nbsp;|&nbsp; usuario / user123</small>
+</form>
+<script>
+    // Spring redireciona para /login.html?erro quando a senha esta errada
+    if (location.search.includes('erro')) document.getElementById('erro').hidden = false;
+</script>
+</body>
+</html>
