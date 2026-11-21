@@ -135,9 +135,10 @@ async function montarFormulario() {
         const req = c.opcional ? '' : 'required';
         if (c.tipo === 'select') {
             // opcoes fixas (perfil) ou vindas da API (relacionamento)
+            const comEstoque = atual === 'saidas' && c.origem === 'produtos';
             const opcoes = c.opcoes
                 ? c.opcoes.map(o => `<option value="${o}">${o}</option>`)
-                : (await api('GET', '/api/' + c.origem)).map(o => `<option value="${o.id}">${exibir(o)}</option>`);
+                : (await api('GET', '/api/' + c.origem)).map(o => `<option value="${o.id}">${exibir(o)}${comEstoque ? ' (estoque: ' + o.quantidadeEstoque + ')' : ''}</option>`);
             html += `<label>${c.label}<select name="${c.nome}" ${req}><option value="">--</option>${opcoes.join('')}</select></label>`;
         } else {
             const tipo = c.tipo === 'cep' ? 'text' : (c.tipo || 'text');
