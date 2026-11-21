@@ -173,6 +173,8 @@ async function montarFormulario() {
 async function salvar(evento) {
     evento.preventDefault();
     const form = evento.target;
+    const botao = form.querySelector('button[type="submit"]');
+    botao.disabled = true;   
     const dados = {};
     for (const c of ENTIDADES[atual].campos) {
         let valor = form.elements[c.nome].value;
@@ -186,8 +188,10 @@ async function salvar(evento) {
         else await api('POST', '/api/' + atual, dados);
         await abrir(atual);
         mostrarSucesso('Registro salvo com sucesso!');
-    } catch (e) {
+        } catch (e) {
         mostrarErro(e.message);
+    } finally {
+        botao.disabled = false;
     }
 }
 
