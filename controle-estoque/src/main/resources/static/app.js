@@ -91,10 +91,17 @@ async function api(metodo, url, corpo) {
 
 function mostrarErro(texto) {
     const p = document.getElementById('mensagem');
+    p.style.color = '';
     p.textContent = texto || '';
     p.hidden = !texto;
 }
 
+function mostrarSucesso(texto) {
+    const p = document.getElementById('mensagem');
+    p.style.color = '#2e7d32';
+    p.textContent = texto;
+    p.hidden = false;
+}
 
 function exibir(valor) {
     if (valor === null || valor === undefined) return '';
@@ -178,6 +185,7 @@ async function salvar(evento) {
         if (editandoId) await api('PUT', `/api/${atual}/${editandoId}`, dados);
         else await api('POST', '/api/' + atual, dados);
         await abrir(atual);
+        mostrarSucesso('Registro salvo com sucesso!');
     } catch (e) {
         mostrarErro(e.message);
     }
@@ -199,7 +207,7 @@ async function excluir(id) {
     try {
         await api('DELETE', `/api/${atual}/${id}`);
         await carregarTabela();
-        mostrarErro();
+        mostrarSucesso('Registro excluido com sucesso!');
     } catch (e) {
         mostrarErro(e.message);
     }
