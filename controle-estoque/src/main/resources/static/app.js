@@ -69,7 +69,7 @@ const ENTIDADES = {
 };
 
 let usuarioLogado = null;
-let atual = null;        // nome da entidade aberta (ex.: 'produtos')
+let atual = null;        
 let editandoId = null;
 const ESTOQUE_MINIMO = 5;  
 
@@ -95,13 +95,20 @@ function mostrarErro(texto) {
     p.hidden = !texto;
 }
 
-// Mostra relacionamentos pelo nome (ex.: categoria -> "Bebidas")
+
 function exibir(valor) {
     if (valor === null || valor === undefined) return '';
     if (typeof valor === 'object') return valor.nome || valor.login || valor.id;
     return valor;
 }
 
+
+function formatar(campo, valor) {
+    if (campo === 'preco') {
+        return Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+    return exibir(valor);
+}
 // ---------------- Telas ----------------
 async function abrir(nome) {
     atual = nome;
@@ -124,7 +131,7 @@ async function carregarTabela() {
 
     document.getElementById('linhas').innerHTML = registros.map(r =>
         '<tr' + (atual === 'produtos' && r.quantidadeEstoque < ESTOQUE_MINIMO ? ' style="background:#ffebee"' : '') + '>' +
-        colunas.map(c => `<td>${exibir(r[c.nome])}</td>`).join('') +
+        colunas.map(c => `<td>${formatar(c.nome, r[c.nome])}</td>`).join('') +
         `<td><button onclick="editar(${r.id})">Editar</button>
              ${admin ? `<button class="perigo" onclick="excluir(${r.id})">Excluir</button>` : ''}</td></tr>`
     ).join('');
