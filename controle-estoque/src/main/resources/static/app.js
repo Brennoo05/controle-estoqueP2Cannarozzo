@@ -49,9 +49,9 @@ const ENTIDADES = {
         titulo: 'Clientes',
         campos: [
             { nome: 'nome', label: 'Nome' },
-            { nome: 'cpf', label: 'CPF' },
-            { nome: 'telefone', label: 'Telefone', opcional: true },
-            { nome: 'cep', label: 'CEP', tipo: 'cep', opcional: true },
+            { nome: 'cpf', label: 'CPF', mascara: mascaraCpf, placeholder: 'Somente números, sem pontos ou traços.' },
+            { nome: 'telefone', label: 'Telefone', mascara: mascaraTelefone, placeholder: 'Exemplo: 119999999999', opcional: true },
+            { nome: 'cep', label: 'CEP', tipo: 'cep', placeholder: 'Somente números', opcional: true },
             { nome: 'endereco', label: 'Endereco', opcional: true },
             { nome: 'cidade', label: 'Cidade', opcional: true },
             { nome: 'uf', label: 'UF', opcional: true }
@@ -116,6 +116,57 @@ function formatar(campo, valor) {
     }
     return exibir(valor);
 }
+
+function mascaraCpf(digitos) {
+    return digitos.slice(0, 11)
+        .replace(/^(\d{3})(?=\d)/, '$1.')
+        .replace(/^(\d{3}\.\d{3})(?=\d)/, '$1.')
+        .replace(/^(\d{3}\.\d{3}\.\d{3})(?=\d)/, '$1-');
+}
+
+function mascaraTelefone(digitos) {
+    const ddd = digitos.slice(0, 2);
+    const numero = digitos.slice(2, 11);
+    const prefixo = numero.length === 9 ? 5 : 4;
+    if (!ddd) return '';
+    if (!numero) return '(' + ddd;
+    return '(' + ddd + ') ' + numero.slice(0, prefixo) +
+        (numero.length > prefixo ? '-' + numero.slice(prefixo) : '');
+}
+
+function limitarInsercao(evento, mascara) {
+    const campo = evento.target;
+    if (!evento.data || campo.selectionEnd === campo.value.length) return;
+
+    const valor = campo.value.slice(0, campo.selectionStart) + evento.data + campo.value.slice(campo.selectionEnd);
+    const digitos = valor.replace(/\D/g, '');
+    // Evita descartar o ultimo digito ao inserir texto no meio de um campo cheio.
+    if (mascara(digitos).replace(/\D/g, '').length < digitos.length) evento.preventDefault();
+}
+
+function aplicarMascara(evento, mascara) {
+    const campo = evento.target;
+    const valor = campo.value;
+    const formatado = mascara(valor.replace(/\D/g, ''));
+    if (valor === formatado) return;
+
+    let posicao = formatado.length;
+    if (campo.selectionStart < valor.length) {
+        const digitosAntes = valor.slice(0, campo.selectionStart).replace(/\D/g, '').length;
+        posicao = 0;
+        let digitos = 0;
+        while (posicao < formatado.length && digitos < digitosAntes) {
+            if (/\d/.test(formatado[posicao])) digitos++;
+            posicao++;
+        }
+        if (evento.inputType === 'deleteContentForward') {
+            while (posicao < formatado.length && /\D/.test(formatado[posicao])) posicao++;
+        }
+    }
+    campo.value = formatado;
+    campo.setSelectionRange(posicao, posicao);
+}
+
 // ---------------- Telas ----------------
 async function abrir(nome) {
     atual = nome;
@@ -159,13 +210,23 @@ async function montarFormulario() {
         } else {
             const tipo = c.tipo === 'cep' ? 'text' : (c.tipo || 'text');
             const extra = c.tipo === 'number' ? 'step="any" min="0"' : '';
-            const cep = c.tipo === 'cep' ? 'onblur="buscarCep(this.value)" placeholder="so numeros"' : '';
-            html += `<label>${c.label}<input name="${c.nome}" type="${tipo}" ${extra} ${cep} ${req}></label>`;
+            const cep = c.tipo === 'cep' ? 'onblur="buscarCep(this.value)"' : '';
+            const dica = c.placeholder || (c.tipo === 'cep' ? 'so numeros' : '');
+            const placeholder = dica ? `placeholder="${dica}"` : '';
+            const teclado = c.mascara ? 'inputmode="numeric"' : '';
+            html += `<label>${c.label}<input name="${c.nome}" type="${tipo}" ${extra} ${cep} ${placeholder} ${teclado} ${req}></label>`;
         }
     }
     html += `<button type="submit">Salvar</button> <button type="button" onclick="abrir(atual)">Limpar</button>`;
     const form = document.getElementById('formulario');
     form.innerHTML = html;
+    for (const c of cfg.campos) {
+        if (c.mascara) {
+            const campo = form.elements[c.nome];
+            campo.onbeforeinput = evento => limitarInsercao(evento, c.mascara);
+            campo.oninput = evento => aplicarMascara(evento, c.mascara);
+        }
+    }
     form.onsubmit = salvar;
 }
 
@@ -177,7 +238,10 @@ async function salvar(evento) {
     botao.disabled = true;   
     const dados = {};
     for (const c of ENTIDADES[atual].campos) {
-        let valor = form.elements[c.nome].value;
+        const campo = form.elements[c.nome];
+        let valor = campo.value;
+        // Mantem o valor salvo quando a mascara so mudou a exibicao na edicao.
+        if (c.mascara && valor === campo.defaultValue) valor = campo.dataset.valorOriginal ?? valor;
         if (valor === '') valor = null;
         else if (c.tipo === 'select' && c.origem) valor = { id: Number(valor) }; // relacionamento -> {id}
         else if (c.tipo === 'number') valor = Number(valor);
@@ -200,7 +264,16 @@ async function editar(id) {
     const form = document.getElementById('formulario');
     for (const c of ENTIDADES[atual].campos) {
         const valor = registro[c.nome];
-        form.elements[c.nome].value = valor && typeof valor === 'object' ? valor.id : (valor ?? '');
+        const campo = form.elements[c.nome];
+        campo.value = valor && typeof valor === 'object' ? valor.id : (valor ?? '');
+        if (c.mascara) {
+            campo.dataset.valorOriginal = campo.value;
+            if (/^\d+$/.test(campo.value)) {
+                const formatado = c.mascara(campo.value);
+                if (formatado.replace(/\D/g, '') === campo.value) campo.value = formatado;
+            }
+            campo.defaultValue = campo.value;
+        }
     }
     editandoId = id;
     mostrarErro();
