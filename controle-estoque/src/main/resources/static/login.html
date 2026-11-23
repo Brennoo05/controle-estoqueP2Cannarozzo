@@ -9,10 +9,10 @@
 <body class="login">
 <form method="post" action="/login" class="card">
     <h1>Controle de Estoque</h1>
-    <p id="erro" class="erro" hidden>Login ou senha invalidos.</p>
+    <p id="erro" class="message error" hidden>Login ou senha inválidos.</p>
     <label>Login <input name="username" placeholder="Digite seu login" required autofocus></label>
-<label>Senha <input name="password" type="password" placeholder="Digite sua senha" required></label>
-    <button type="submit">Entrar</button>
+    <label>Senha <input name="password" type="password" placeholder="Digite sua senha" required></label>
+    <button class="btn primary" type="submit">Entrar</button>
     <small>admin / admin123 &nbsp;|&nbsp; usuario / user123</small>
 </form>
 <script>

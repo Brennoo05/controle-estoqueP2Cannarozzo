@@ -4,17 +4,18 @@
 // ======================================================================
 const ENTIDADES = {
     produtos: {
-        titulo: 'Produtos',
+        titulo: 'Produtos', item: 'produto', novo: 'Novo produto', icone: '□', csv: 'produtos.csv',
         campos: [
-            { nome: 'nome', label: 'Nome' },
-            { nome: 'preco', label: 'Preco (R$)', tipo: 'number' },
+            { nome: 'nome', label: 'Nome', coluna: 'Produto' },
+            { nome: 'preco', label: 'Preço (R$)', tipo: 'number' },
             { nome: 'categoria', label: 'Categoria', tipo: 'select', origem: 'categorias' },
             { nome: 'fornecedor', label: 'Fornecedor', tipo: 'select', origem: 'fornecedores' }
         ],
-        extras: [{ nome: 'quantidadeEstoque', label: 'Estoque' }]
+        extras: [{ nome: 'quantidadeEstoque', label: 'Estoque' }],
+        ordemColunas: ['nome', 'categoria', 'fornecedor', 'preco', 'quantidadeEstoque']
     },
     entradas: {
-        titulo: 'Entradas (compras)',
+        titulo: 'Entradas (compras)', menu: 'Entradas', item: 'entrada', novo: 'Nova entrada', icone: '⇩',
         campos: [
             { nome: 'produto', label: 'Produto', tipo: 'select', origem: 'produtos' },
             { nome: 'quantidade', label: 'Quantidade', tipo: 'number' },
@@ -22,7 +23,7 @@ const ENTIDADES = {
         ]
     },
     saidas: {
-        titulo: 'Saidas (vendas)',
+        titulo: 'Saídas (vendas)', menu: 'Saídas', item: 'saída', novo: 'Nova saída', icone: '⇧',
         campos: [
             { nome: 'produto', label: 'Produto', tipo: 'select', origem: 'produtos' },
             { nome: 'cliente', label: 'Cliente', tipo: 'select', origem: 'clientes' },
@@ -31,34 +32,34 @@ const ENTIDADES = {
         ]
     },
     categorias: {
-        titulo: 'Categorias',
+        titulo: 'Categorias', item: 'categoria', novo: 'Nova categoria', icone: '◇',
         campos: [{ nome: 'nome', label: 'Nome' }]
     },
     fornecedores: {
-        titulo: 'Fornecedores',
+        titulo: 'Fornecedores', item: 'fornecedor', novo: 'Novo fornecedor', icone: '▤',
         campos: [
             { nome: 'nome', label: 'Nome' },
             { nome: 'cnpj', label: 'CNPJ' },
             { nome: 'cep', label: 'CEP', tipo: 'cep', opcional: true },
-            { nome: 'endereco', label: 'Endereco', opcional: true },
+            { nome: 'endereco', label: 'Endereço', opcional: true },
             { nome: 'cidade', label: 'Cidade', opcional: true },
             { nome: 'uf', label: 'UF', opcional: true }
         ]
     },
     clientes: {
-        titulo: 'Clientes',
+        titulo: 'Clientes', item: 'cliente', novo: 'Novo cliente', icone: '♧', csv: 'clientes.csv',
         campos: [
             { nome: 'nome', label: 'Nome' },
             { nome: 'cpf', label: 'CPF', mascara: mascaraCpf, placeholder: 'Somente números, sem pontos ou traços.' },
             { nome: 'telefone', label: 'Telefone', mascara: mascaraTelefone, placeholder: 'Exemplo: 119999999999', opcional: true },
             { nome: 'cep', label: 'CEP', tipo: 'cep', placeholder: 'Somente números', opcional: true },
-            { nome: 'endereco', label: 'Endereco', opcional: true },
+            { nome: 'endereco', label: 'Endereço', opcional: true },
             { nome: 'cidade', label: 'Cidade', opcional: true },
             { nome: 'uf', label: 'UF', opcional: true }
         ]
     },
     usuarios: {
-        titulo: 'Usuarios',
+        titulo: 'Usuários', item: 'usuário', novo: 'Novo usuário', icone: '♙',
         somenteAdmin: true,
         campos: [
             { nome: 'login', label: 'Login' },
@@ -69,9 +70,16 @@ const ENTIDADES = {
 };
 
 let usuarioLogado = null;
-let atual = null;        
+let atual = null;
 let editandoId = null;
-const ESTOQUE_MINIMO = 5;  
+let registros = [];
+let versaoTela = 0;
+let versaoPainel = 0;
+let retornoFoco = null;
+let salvando = false;
+const ESTOQUE_MINIMO = 5;
+const porId = id => document.getElementById(id);
+const normalizar = valor => String(exibir(valor)).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 
 // ---------------- Chamadas a API ----------------
 async function api(metodo, url, corpo) {
@@ -80,7 +88,7 @@ async function api(metodo, url, corpo) {
         headers: { 'Content-Type': 'application/json' },
         body: corpo ? JSON.stringify(corpo) : undefined
     });
-    if (resp.status === 401) { location.href = '/login.html'; return; }
+    if (resp.status === 401) location.href = '/login.html';
     if (resp.status === 403) throw new Error('Acesso negado: somente ADMIN.');
     if (!resp.ok) {
         const erro = await resp.json().catch(() => ({}));
@@ -89,18 +97,17 @@ async function api(metodo, url, corpo) {
     return resp.status === 204 ? null : resp.json();
 }
 
-function mostrarErro(texto) {
-    const p = document.getElementById('mensagem');
-    p.style.color = '';
-    p.textContent = texto || '';
-    p.hidden = !texto;
+function mostrarMensagem(texto = '', erro = false) {
+    const mensagem = porId('mensagem');
+    mensagem.textContent = texto;
+    mensagem.hidden = !texto;
+    mensagem.classList.toggle('error', erro);
 }
 
-function mostrarSucesso(texto) {
-    const p = document.getElementById('mensagem');
-    p.style.color = '#2e7d32';
-    p.textContent = texto;
-    p.hidden = false;
+function mensagemFormulario(texto = '') {
+    const mensagem = porId('erro-formulario');
+    mensagem.textContent = texto;
+    mensagem.hidden = !texto;
 }
 
 function exibir(valor) {
@@ -168,141 +175,307 @@ function aplicarMascara(evento, mascara) {
 }
 
 // ---------------- Telas ----------------
+function botao(texto, classe, acao) {
+    const elemento = document.createElement('button');
+    elemento.type = 'button';
+    elemento.className = classe;
+    elemento.textContent = texto;
+    elemento.addEventListener('click', acao);
+    return elemento;
+}
+
 async function abrir(nome) {
+    if (salvando || atual === nome) return;
+    fecharPainel(false);
     atual = nome;
-    editandoId = null;
-    mostrarErro();
-    document.getElementById('titulo').textContent = ENTIDADES[nome].titulo;
-    await montarFormulario();
-    await carregarTabela();
-}
-
-async function carregarTabela() {
-    const cfg = ENTIDADES[atual];
-    const colunas = [{ nome: 'id', label: 'ID' }, ...cfg.campos.filter(c => !c.oculto), ...(cfg.extras || [])];
-
-    document.getElementById('cabecalho').innerHTML =
-        '<tr>' + colunas.map(c => `<th>${c.label}</th>`).join('') + '<th>Acoes</th></tr>';
-
-    const registros = await api('GET', '/api/' + atual);
-    const admin = usuarioLogado.perfil === 'ADMIN';
-
-    document.getElementById('linhas').innerHTML = registros.map(r =>
-        '<tr' + (atual === 'produtos' && r.quantidadeEstoque < ESTOQUE_MINIMO ? ' style="background:#ffebee"' : '') + '>' +
-        colunas.map(c => `<td>${formatar(c.nome, r[c.nome])}</td>`).join('') +
-        `<td><button onclick="editar(${r.id})">Editar</button>
-             ${admin ? `<button class="perigo" onclick="excluir(${r.id})">Excluir</button>` : ''}</td></tr>`
-    ).join('');
-}
-
-async function montarFormulario() {
-    const cfg = ENTIDADES[atual];
-    let html = '';
-    for (const c of cfg.campos) {
-        const req = c.opcional ? '' : 'required';
-        if (c.tipo === 'select') {
-            // opcoes fixas (perfil) ou vindas da API (relacionamento)
-            const comEstoque = atual === 'saidas' && c.origem === 'produtos';
-            const opcoes = c.opcoes
-                ? c.opcoes.map(o => `<option value="${o}">${o}</option>`)
-                : (await api('GET', '/api/' + c.origem)).map(o => `<option value="${o.id}">${exibir(o)}${comEstoque ? ' (estoque: ' + o.quantidadeEstoque + ')' : ''}</option>`);
-            html += `<label>${c.label}<select name="${c.nome}" ${req}><option value="">--</option>${opcoes.join('')}</select></label>`;
-        } else {
-            const tipo = c.tipo === 'cep' ? 'text' : (c.tipo || 'text');
-            const extra = c.tipo === 'number' ? 'step="any" min="0"' : '';
-            const cep = c.tipo === 'cep' ? 'onblur="buscarCep(this.value)"' : '';
-            const dica = c.placeholder || (c.tipo === 'cep' ? 'so numeros' : '');
-            const placeholder = dica ? `placeholder="${dica}"` : '';
-            const teclado = c.mascara ? 'inputmode="numeric"' : '';
-            html += `<label>${c.label}<input name="${c.nome}" type="${tipo}" ${extra} ${cep} ${placeholder} ${teclado} ${req}></label>`;
-        }
+    const versao = ++versaoTela;
+    const cfg = ENTIDADES[nome];
+    registros = [];
+    mostrarMensagem();
+    porId('titulo').textContent = cfg.titulo;
+    porId('novo').textContent = '+ ' + cfg.novo;
+    porId('novo').disabled = false;
+    porId('baixar-csv').hidden = !cfg.csv;
+    porId('busca').value = '';
+    porId('busca').placeholder = 'Buscar ' + cfg.item;
+    porId('rotulo-busca').textContent = porId('busca').placeholder;
+    const filtro = porId('filtro-categoria');
+    filtro.hidden = nome !== 'produtos';
+    filtro.replaceChildren(new Option('Todas as categorias', ''));
+    for (const item of porId('menu').children) {
+        if (item.dataset.tela === nome) item.setAttribute('aria-current', 'page');
+        else item.removeAttribute('aria-current');
     }
-    html += `<button type="submit">Salvar</button> <button type="button" onclick="abrir(atual)">Limpar</button>`;
-    const form = document.getElementById('formulario');
-    form.innerHTML = html;
-    for (const c of cfg.campos) {
+    renderizarTabela('Carregando registros…');
+    try {
+        const [dados, categorias] = await Promise.all([
+            api('GET', '/api/' + nome),
+            nome === 'produtos' ? api('GET', '/api/categorias') : []
+        ]);
+        if (versao !== versaoTela) return;
+        registros = dados;
+        filtro.append(...categorias.map(c => new Option(c.nome, c.id)));
+        renderizarTabela();
+    } catch (erro) {
+        if (versao !== versaoTela) return;
+        renderizarTabela('Não foi possível carregar os registros.');
+        mostrarMensagem(erro.message, true);
+    }
+}
+
+function colunasTabela() {
+    const cfg = ENTIDADES[atual];
+    const campos = [...cfg.campos.filter(c => !c.oculto), ...(cfg.extras || [])];
+    const colunas = cfg.ordemColunas
+        ? cfg.ordemColunas.map(nome => campos.find(c => c.nome === nome))
+        : campos;
+    return [{ nome: 'id', label: 'ID' }, ...colunas];
+}
+
+function registrosVisiveis(colunas) {
+    const busca = normalizar(porId('busca').value);
+    const categoria = porId('filtro-categoria').value;
+    return registros.filter(registro =>
+        (atual !== 'produtos' || !categoria || String(registro.categoria?.id) === categoria) &&
+        (!busca || colunas.some(c => normalizar(formatar(c.nome, registro[c.nome])).includes(busca)))
+    );
+}
+
+function renderizarTabela(mensagemVazia) {
+    const colunas = colunasTabela();
+    const dados = registrosVisiveis(colunas);
+    const cabecalho = document.createElement('tr');
+    for (const titulo of [...colunas.map(c => c.coluna || c.label), 'Ações']) {
+        const th = document.createElement('th');
+        th.scope = 'col';
+        th.textContent = titulo;
+        cabecalho.append(th);
+    }
+    porId('cabecalho').replaceChildren(cabecalho);
+    const corpo = porId('linhas');
+    corpo.replaceChildren();
+    porId('baixar-csv').disabled = dados.length === 0;
+    for (const registro of dados) {
+        const linha = corpo.insertRow();
+        linha.classList.toggle('no-stock', atual === 'produtos' && registro.quantidadeEstoque === 0);
+        for (const coluna of colunas) {
+            const celula = linha.insertCell();
+            const valor = registro[coluna.nome];
+            celula.textContent = formatar(coluna.nome, valor) || (valor === 0 ? '0' : '—');
+            if (coluna.nome === 'quantidadeEstoque' && valor < ESTOQUE_MINIMO) {
+                const etiqueta = document.createElement('span');
+                etiqueta.className = 'tag ' + (valor === 0 ? 'stock-warning' : 'stock-low');
+                etiqueta.textContent = valor === 0 ? 'Sem estoque' : 'Estoque baixo';
+                celula.append(etiqueta);
+            }
+        }
+        const acoes = document.createElement('div');
+        acoes.className = 'actions';
+        acoes.append(botao('Editar', 'btn', evento => abrirPainel(registro.id, evento.currentTarget)));
+        if (usuarioLogado.perfil === 'ADMIN') {
+            acoes.append(botao('Excluir', 'btn danger', evento => excluir(registro.id, evento.currentTarget)));
+        }
+        linha.insertCell().append(acoes);
+    }
+    if (!dados.length) {
+        const celula = corpo.insertRow().insertCell();
+        celula.colSpan = colunas.length + 1;
+        celula.className = 'empty';
+        celula.textContent = mensagemVazia || (porId('busca').value.trim() || porId('filtro-categoria').value
+            ? 'Nenhum resultado para esta busca.' : 'Nenhum registro cadastrado.');
+    }
+}
+
+async function recarregarTabela(tela, versao) {
+    const dados = await api('GET', '/api/' + tela);
+    if (versao !== versaoTela) return;
+    registros = dados;
+    renderizarTabela();
+}
+
+function celulaCsv(valor) {
+    let texto = String(valor ?? '');
+    // Impede que texto de cadastro seja interpretado como fórmula ao abrir a planilha.
+    if (typeof valor === 'string' && (/^\s*[=+\-@]/.test(texto) || /^[\t\r\n]/.test(texto))) texto = "'" + texto;
+    return '"' + texto.replaceAll('"', '""') + '"';
+}
+
+function baixarCsv() {
+    const arquivo = ENTIDADES[atual].csv;
+    const colunas = colunasTabela();
+    const dados = registrosVisiveis(colunas);
+    if (!arquivo || !dados.length) return;
+    const linhas = [colunas.map(c => c.coluna || c.label), ...dados.map(registro => colunas.map(c =>
+        c.nome === 'preco' && registro.preco != null
+            ? Number(registro.preco).toFixed(2).replace('.', ',')
+            : exibir(registro[c.nome])
+    ))];
+    const csv = linhas.map(linha => linha.map(celulaCsv).join(';')).join('\r\n') + '\r\n';
+    const url = URL.createObjectURL(new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = arquivo;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// ---------------- Formulário lateral ----------------
+function criarCampo(c, registro, opcoes, tela, versao) {
+    const label = document.createElement('label');
+    label.textContent = c.nome === 'senha' && !registro ? 'Senha' : c.label;
+    const campo = document.createElement(c.tipo === 'select' ? 'select' : 'input');
+    campo.name = c.nome;
+    campo.required = !c.opcional || (c.nome === 'senha' && !registro);
+    const valor = c.oculto ? '' : registro?.[c.nome];
+    if (c.tipo === 'select') {
+        campo.append(new Option('Selecione…', ''));
+        for (const opcao of c.opcoes || opcoes) {
+            const estoque = tela === 'saidas' && c.origem === 'produtos' ? ' (estoque: ' + opcao.quantidadeEstoque + ')' : '';
+            campo.append(new Option(exibir(opcao) + estoque, c.opcoes ? opcao : opcao.id));
+        }
+    } else {
+        campo.type = c.tipo === 'cep' ? 'text' : (c.tipo || 'text');
+        if (campo.type === 'password') campo.autocomplete = 'new-password';
+        if (campo.type === 'number') {
+            campo.min = '0';
+            campo.step = 'any';
+        }
+        if (c.placeholder || c.tipo === 'cep') campo.placeholder = c.placeholder || 'Somente números';
+        if (c.tipo === 'cep') campo.addEventListener('blur', () => buscarCep(campo, versao));
         if (c.mascara) {
-            const campo = form.elements[c.nome];
+            campo.inputMode = 'numeric';
             campo.onbeforeinput = evento => limitarInsercao(evento, c.mascara);
             campo.oninput = evento => aplicarMascara(evento, c.mascara);
         }
     }
-    form.onsubmit = salvar;
+    campo.value = valor && typeof valor === 'object' ? valor.id : (valor ?? '');
+    if (c.mascara && registro) {
+        campo.dataset.valorOriginal = campo.value;
+        if (/^\d+$/.test(campo.value)) {
+            const formatado = c.mascara(campo.value);
+            if (formatado.replace(/\D/g, '') === campo.value) campo.value = formatado;
+        }
+        campo.defaultValue = campo.value;
+    }
+    label.append(campo);
+    return label;
 }
 
-// ---------------- Acoes ----------------
+async function abrirPainel(id, acionador) {
+    if (salvando) return;
+    mostrarMensagem();
+    const tela = atual;
+    const cfg = ENTIDADES[tela];
+    const versao = ++versaoPainel;
+    editandoId = id;
+    retornoFoco = acionador;
+    porId('titulo-painel').textContent = id === null ? cfg.novo : 'Editar ' + cfg.item;
+    porId('salvar').textContent = id === null ? 'Salvar ' + cfg.item : 'Salvar alterações';
+    porId('salvar').disabled = true;
+    porId('campos').replaceChildren();
+    mensagemFormulario();
+    porId('painel').hidden = false;
+    porId('workspace').classList.add('open');
+    porId('novo').setAttribute('aria-expanded', 'true');
+    porId('fechar').focus();
+    try {
+        const [registro, opcoes] = await Promise.all([
+            id === null ? null : api('GET', `/api/${tela}/${id}`),
+            Promise.all(cfg.campos.map(c => c.origem ? api('GET', '/api/' + c.origem) : []))
+        ]);
+        if (versao !== versaoPainel) return;
+        porId('campos').replaceChildren(...cfg.campos.map((c, i) => criarCampo(c, registro, opcoes[i], tela, versao)));
+        porId('salvar').disabled = false;
+        porId('campos').querySelector('input, select').focus();
+    } catch (erro) {
+        if (versao === versaoPainel) mensagemFormulario(erro.message);
+    }
+}
+
+function fecharPainel(restaurarFoco = true) {
+    if (porId('painel').hidden || salvando) return;
+    versaoPainel++;
+    editandoId = null;
+    porId('painel').hidden = true;
+    porId('workspace').classList.remove('open');
+    porId('novo').setAttribute('aria-expanded', 'false');
+    if (restaurarFoco) (retornoFoco?.isConnected ? retornoFoco : porId('novo')).focus();
+    retornoFoco = null;
+}
+
 async function salvar(evento) {
     evento.preventDefault();
-    const form = evento.target;
-    const botao = form.querySelector('button[type="submit"]');
-    botao.disabled = true;   
+    const botaoSalvar = porId('salvar');
+    if (botaoSalvar.disabled) return;
+    salvando = true;
+    botaoSalvar.disabled = true;
+    mensagemFormulario();
+    const tela = atual;
+    const versao = versaoTela;
     const dados = {};
-    for (const c of ENTIDADES[atual].campos) {
-        const campo = form.elements[c.nome];
+    for (const c of ENTIDADES[tela].campos) {
+        const campo = evento.currentTarget.elements[c.nome];
         let valor = campo.value;
-        // Mantem o valor salvo quando a mascara so mudou a exibicao na edicao.
+        // Preserva o valor gravado se a máscara só mudou sua exibição na edição.
         if (c.mascara && valor === campo.defaultValue) valor = campo.dataset.valorOriginal ?? valor;
         if (valor === '') valor = null;
-        else if (c.tipo === 'select' && c.origem) valor = { id: Number(valor) }; // relacionamento -> {id}
+        else if (c.origem) valor = { id: Number(valor) };
         else if (c.tipo === 'number') valor = Number(valor);
         dados[c.nome] = valor;
     }
     try {
-        if (editandoId) await api('PUT', `/api/${atual}/${editandoId}`, dados);
-        else await api('POST', '/api/' + atual, dados);
-        await abrir(atual);
-        mostrarSucesso('Registro salvo com sucesso!');
-        } catch (e) {
-        mostrarErro(e.message);
+        if (editandoId !== null) await api('PUT', `/api/${tela}/${editandoId}`, dados);
+        else await api('POST', '/api/' + tela, dados);
+    } catch (erro) {
+        mensagemFormulario(erro.message);
+        botaoSalvar.disabled = false;
+        return;
     } finally {
-        botao.disabled = false;
+        salvando = false;
     }
-}
-
-async function editar(id) {
-    const registro = await api('GET', `/api/${atual}/${id}`);
-    const form = document.getElementById('formulario');
-    for (const c of ENTIDADES[atual].campos) {
-        const valor = registro[c.nome];
-        const campo = form.elements[c.nome];
-        campo.value = valor && typeof valor === 'object' ? valor.id : (valor ?? '');
-        if (c.mascara) {
-            campo.dataset.valorOriginal = campo.value;
-            if (/^\d+$/.test(campo.value)) {
-                const formatado = c.mascara(campo.value);
-                if (formatado.replace(/\D/g, '') === campo.value) campo.value = formatado;
-            }
-            campo.defaultValue = campo.value;
-        }
-    }
-    editandoId = id;
-    mostrarErro();
-}
-
-async function excluir(id) {
-    if (!confirm('Excluir o registro ' + id + '?')) return;
+    fecharPainel(false);
+    porId('novo').focus();
     try {
-        await api('DELETE', `/api/${atual}/${id}`);
-        await carregarTabela();
-        mostrarSucesso('Registro excluido com sucesso!');
-    } catch (e) {
-        mostrarErro(e.message);
+        await recarregarTabela(tela, versao);
+        if (versao === versaoTela) mostrarMensagem('Registro salvo com sucesso!');
+    } catch (erro) {
+        if (versao === versaoTela) mostrarMensagem('Registro salvo, mas a lista não pôde ser atualizada. ' + erro.message, true);
     }
 }
 
-// Integracao com ViaCEP (chama o nosso backend, que chama o ViaCEP)
-async function buscarCep(cep) {
+async function excluir(id, acionador) {
+    if (salvando || !confirm('Excluir o registro ' + id + '?')) return;
+    mostrarMensagem();
+    const tela = atual;
+    const versao = versaoTela;
+    acionador.disabled = true;
+    try {
+        await api('DELETE', `/api/${tela}/${id}`);
+        if (versao !== versaoTela) return;
+        if (id === editandoId) fecharPainel();
+        await recarregarTabela(tela, versao);
+        if (versao === versaoTela) mostrarMensagem('Registro excluído com sucesso!');
+    } catch (erro) {
+        if (versao === versaoTela) mostrarMensagem(erro.message, true);
+    } finally {
+        acionador.disabled = false;
+    }
+}
+
+async function buscarCep(campo, versao) {
+    const cep = campo.value.trim();
     if (!cep) return;
     try {
-        const end = await api('GET', '/api/cep/' + cep);
-        const form = document.getElementById('formulario');
-        form.elements.cep.value = end.cep;
-        form.elements.endereco.value = end.endereco;
-        form.elements.cidade.value = end.cidade;
-        form.elements.uf.value = end.uf;
-        mostrarErro();
-    } catch (e) {
-        mostrarErro(e.message);
+        const endereco = await api('GET', '/api/cep/' + encodeURIComponent(cep));
+        if (versao !== versaoPainel || campo.value.trim() !== cep || salvando) return;
+        for (const chave of ['cep', 'endereco', 'cidade', 'uf']) {
+            campo.form.elements[chave].value = endereco[chave] ?? '';
+        }
+        mensagemFormulario();
+    } catch (erro) {
+        if (versao === versaoPainel && campo.value.trim() === cep && !salvando) mensagemFormulario(erro.message);
     }
 }
 
@@ -311,17 +484,31 @@ async function sair() {
     location.href = '/login.html';
 }
 
-// ---------------- Inicio ----------------
 async function iniciar() {
     usuarioLogado = await api('GET', '/api/usuarios/me');
-    document.getElementById('usuario').textContent = usuarioLogado.login + ' (' + usuarioLogado.perfil + ')';
-
-    document.getElementById('menu').innerHTML = Object.entries(ENTIDADES)
-        .filter(([, cfg]) => !cfg.somenteAdmin || usuarioLogado.perfil === 'ADMIN')
-        .map(([nome, cfg]) => `<button onclick="abrir('${nome}')">${cfg.titulo}</button>`)
-        .join('');
-
-    abrir('produtos');
+    porId('usuario').textContent = usuarioLogado.login + ' (' + usuarioLogado.perfil + ')';
+    for (const [nome, cfg] of Object.entries(ENTIDADES)) {
+        if (cfg.somenteAdmin && usuarioLogado.perfil !== 'ADMIN') continue;
+        const item = botao(cfg.menu || cfg.titulo, '', () => abrir(nome));
+        item.dataset.tela = nome;
+        const icone = document.createElement('span');
+        icone.className = 'nav-icon';
+        icone.setAttribute('aria-hidden', 'true');
+        icone.textContent = cfg.icone;
+        item.prepend(icone);
+        porId('menu').append(item);
+    }
+    porId('novo').onclick = evento => abrirPainel(null, evento.currentTarget);
+    porId('fechar').onclick = porId('cancelar').onclick = () => fecharPainel();
+    porId('baixar-csv').onclick = baixarCsv;
+    porId('busca').oninput = () => renderizarTabela();
+    porId('filtro-categoria').onchange = () => renderizarTabela();
+    porId('formulario').onsubmit = salvar;
+    porId('sair').onclick = () => sair().catch(erro => mostrarMensagem(erro.message, true));
+    document.addEventListener('keydown', evento => {
+        if (evento.key === 'Escape') fecharPainel();
+    });
+    await abrir('produtos');
 }
 
-iniciar();
+iniciar().catch(erro => mostrarMensagem(erro.message, true));

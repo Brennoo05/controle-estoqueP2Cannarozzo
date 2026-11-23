@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,33 +7,68 @@
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<header>
-    <strong>Controle de Estoque</strong>
-    <nav id="menu"></nav>
-    <span id="usuario"></span>
-    <a href="/swagger-ui.html" target="_blank">API</a>
-    <button onclick="sair()">Sair</button>
-</header>
-
-<main>
-    <h2 id="titulo"></h2>
-    <p id="mensagem" class="erro" hidden></p>
-
-    <form id="formulario" class="card"></form>
-
-    <table>
-        <thead id="cabecalho"></thead>
-        <tbody id="linhas"></tbody>
-    </table>
-</main>
-
-    
-<footer>
-    Controle de Estoque — Projeto Final DS-II<br>
-    Integrantes: Lucas Viana, Brenno Rodrigues, Murilo
-</footer>
-
-    
+<div class="layout">
+    <aside class="sidebar">
+        <div class="brand">
+            <span class="brand-icon" aria-hidden="true">🛒︎</span>
+            <strong>Controle de Estoque</strong>
+            <small>SUPERMERCADO</small>
+        </div>
+        <nav id="menu" aria-label="Seções do estoque"></nav>
+    </aside>
+    <div class="page">
+        <header>
+            <span id="usuario"></span>
+            <a href="/swagger-ui.html" target="_blank" rel="noopener">API</a>
+            <button class="btn" id="sair" type="button">Sair</button>
+        </header>
+        <div class="workspace" id="workspace">
+            <main>
+                <div class="heading">
+                    <h1 id="titulo"></h1>
+                    <div class="heading-actions">
+                        <button class="btn" id="baixar-csv" type="button" hidden>Baixar CSV</button>
+                        <button class="btn primary" id="novo" type="button" aria-controls="painel"
+                                aria-expanded="false" disabled></button>
+                    </div>
+                </div>
+                <div class="filters">
+                    <label class="search">
+                        <span aria-hidden="true">⌕</span>
+                        <span class="visually-hidden" id="rotulo-busca"></span>
+                        <input id="busca" type="search" aria-labelledby="rotulo-busca">
+                    </label>
+                    <select id="filtro-categoria" aria-label="Filtrar por categoria" hidden></select>
+                </div>
+                <p id="mensagem" class="message" role="status" hidden></p>
+                <div class="table-box" tabindex="0" role="region" aria-labelledby="titulo">
+                    <table>
+                        <thead id="cabecalho"></thead>
+                        <tbody id="linhas"></tbody>
+                    </table>
+                </div>
+                <footer><div>
+                    Controle de Estoque — Projeto Final DS-II<br>
+                    Integrantes: Lucas Viana, Brenno Rodrigues e Murilo
+                </div></footer>
+            </main>
+            <aside id="painel" class="panel" aria-labelledby="titulo-painel" hidden>
+                <div class="panel-head">
+                    <h2 id="titulo-painel"></h2>
+                    <button class="close" id="fechar" type="button" aria-label="Fechar formulário">×</button>
+                </div>
+                <form id="formulario">
+                    <div id="campos" class="fields"></div>
+                    <p id="erro-formulario" class="message error" role="alert" hidden></p>
+                    <div class="form-actions">
+                        <button class="btn primary" type="submit" id="salvar"></button>
+                        <button class="btn" type="button" id="cancelar">Cancelar</button>
+                    </div>
+                </form>
+            </aside>
+        </div>
+    </div>
+</div>
 <script src="/app.js"></script>
 </body>
 </html>
