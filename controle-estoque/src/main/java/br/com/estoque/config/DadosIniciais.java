@@ -7,10 +7,21 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
-// Roda ao iniciar a aplicacao: cria usuarios e alguns dados de exemplo se o banco estiver vazio
+// Cadastra as categorias padrao e cria dados de exemplo na primeira inicializacao.
 @Component
 public class DadosIniciais implements CommandLineRunner {
+
+    private static final String BEBIDAS = "Bebidas";
+    private static final List<String> CATEGORIAS_PADRAO = List.of(
+            BEBIDAS, "Alimentação", "Mercearia", "Hortifruti", "Açougue", "Peixaria",
+            "Padaria e Confeitaria", "Frios e Laticínios", "Congelados", "Limpeza",
+            "Higiene Pessoal", "Utilidades Domésticas", "Produtos para Pets"
+    );
 
     private final UsuarioRepository usuarioRepository;
     private final CategoriaRepository categoriaRepository;
@@ -32,13 +43,11 @@ public class DadosIniciais implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        Categoria bebidas = cadastrarCategoriasPadrao();
         if (usuarioRepository.count() > 0) return;
 
         usuarioRepository.save(new Usuario("admin", passwordEncoder.encode("admin123"), Usuario.Perfil.ADMIN));
         usuarioRepository.save(new Usuario("usuario", passwordEncoder.encode("user123"), Usuario.Perfil.USER));
-
-        Categoria bebidas = categoriaRepository.save(new Categoria("Bebidas"));
-        categoriaRepository.save(new Categoria("Limpeza"));
 
         Fornecedor fornecedor = new Fornecedor();
         fornecedor.setNome("Distribuidora Santos");
@@ -60,5 +69,21 @@ public class DadosIniciais implements CommandLineRunner {
         cliente.setCpf("123.456.789-00");
         cliente.setTelefone("(13) 99999-0000");
         clienteRepository.save(cliente);
+    }
+
+    private Categoria cadastrarCategoriasPadrao() {
+        Map<String, Categoria> categoriasPorNome = new HashMap<>();
+        for (Categoria categoria : categoriaRepository.findAll()) {
+            categoriasPorNome.putIfAbsent(chaveCategoria(categoria.getNome()), categoria);
+        }
+        for (String nome : CATEGORIAS_PADRAO) {
+            categoriasPorNome.computeIfAbsent(chaveCategoria(nome),
+                    chave -> categoriaRepository.save(new Categoria(nome)));
+        }
+        return categoriasPorNome.get(chaveCategoria(BEBIDAS));
+    }
+
+    private String chaveCategoria(String nome) {
+        return nome.strip().toLowerCase(Locale.ROOT);
     }
 }
