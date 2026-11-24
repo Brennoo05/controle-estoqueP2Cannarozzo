@@ -3,6 +3,7 @@ package br.com.estoque.controller;
 import br.com.estoque.service.RegraNegocioException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -32,6 +33,13 @@ public class ErroHandler {
     public Map<String, String> validacao(MethodArgumentNotValidException e) {
         var campo = e.getBindingResult().getFieldErrors().get(0);
         return Map.of("erro", "Campo '" + campo.getField() + "' " + campo.getDefaultMessage());
+    }
+
+    // JSON que nao da para ler: texto onde vai numero, quantidade quebrada, perfil que nao existe
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> formatoInvalido() {
+        return Map.of("erro", "Dados em formato inválido. Confira os campos: a quantidade deve ser um número inteiro.");
     }
 
     // Ex.: excluir categoria que ainda tem produtos, ou CPF/CNPJ/login repetido

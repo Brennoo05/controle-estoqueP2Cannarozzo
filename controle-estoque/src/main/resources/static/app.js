@@ -18,7 +18,7 @@ const ENTIDADES = {
         titulo: 'Entradas (compras)', menu: 'Entradas', item: 'entrada', novo: 'Nova entrada', icone: '⇩',
         campos: [
             { nome: 'produto', label: 'Produto', tipo: 'select', origem: 'produtos' },
-            { nome: 'quantidade', label: 'Quantidade', tipo: 'number' },
+            { nome: 'quantidade', label: 'Quantidade', tipo: 'number', inteiro: true },
             { nome: 'data', label: 'Data', tipo: 'date', opcional: true }
         ]
     },
@@ -27,7 +27,7 @@ const ENTIDADES = {
         campos: [
             { nome: 'produto', label: 'Produto', tipo: 'select', origem: 'produtos' },
             { nome: 'cliente', label: 'Cliente', tipo: 'select', origem: 'clientes' },
-            { nome: 'quantidade', label: 'Quantidade', tipo: 'number' },
+            { nome: 'quantidade', label: 'Quantidade', tipo: 'number', inteiro: true },
             { nome: 'data', label: 'Data', tipo: 'date', opcional: true }
         ]
     },
@@ -339,8 +339,9 @@ function criarCampo(c, registro, opcoes, tela, versao) {
         campo.type = c.tipo === 'cep' ? 'text' : (c.tipo || 'text');
         if (campo.type === 'password') campo.autocomplete = 'new-password';
         if (campo.type === 'number') {
-            campo.min = '0';
-            campo.step = 'any';
+            // quantidade e contada em unidades inteiras; o preco aceita centavos
+            campo.min = c.inteiro ? '1' : '0';
+            campo.step = c.inteiro ? '1' : 'any';
         }
         if (c.placeholder || c.tipo === 'cep') campo.placeholder = c.placeholder || 'Somente números';
         if (c.tipo === 'cep') campo.addEventListener('blur', () => buscarCep(campo, versao));

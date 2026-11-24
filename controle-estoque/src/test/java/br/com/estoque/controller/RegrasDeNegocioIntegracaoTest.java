@@ -117,6 +117,18 @@ class RegrasDeNegocioIntegracaoTest {
                 .andExpect(jsonPath("$.erro").exists());
     }
 
+    @Test
+    void quantidadeDecimalERecusadaEmVezDeArredondada() throws Exception {
+        long produto = novoProduto();
+
+        mvc.perform(post("/api/entradas").with(admin).contentType(MediaType.APPLICATION_JSON)
+                        .content(entrada(produto, "2.7")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro").exists());
+
+        assertEquals(0, estoqueDe(produto));
+    }
+
     // ---------- Apoio ----------
 
     private String entrada(long produto, String quantidade) {
