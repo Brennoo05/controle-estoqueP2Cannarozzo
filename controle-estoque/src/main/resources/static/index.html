@@ -26,13 +26,13 @@
             <main>
                 <div class="heading">
                     <h1 id="titulo"></h1>
-                    <div class="heading-actions">
+                    <div class="heading-actions" id="acoes-titulo">
                         <button class="btn" id="baixar-csv" type="button" hidden>Baixar CSV</button>
                         <button class="btn primary" id="novo" type="button" aria-controls="painel"
                                 aria-expanded="false" disabled></button>
                     </div>
                 </div>
-                <div class="filters">
+                <div class="filters" id="filtros">
                     <label class="search">
                         <span aria-hidden="true">⌕</span>
                         <span class="visually-hidden" id="rotulo-busca"></span>
@@ -41,7 +41,8 @@
                     <select id="filtro-categoria" aria-label="Filtrar por categoria" hidden></select>
                 </div>
                 <p id="mensagem" class="message" role="status" hidden></p>
-                <div class="table-box" tabindex="0" role="region" aria-labelledby="titulo">
+                <section id="visao-painel" aria-labelledby="titulo" hidden></section>
+                <div class="table-box" id="caixa-tabela" tabindex="0" role="region" aria-labelledby="titulo">
                     <table>
                         <thead id="cabecalho"></thead>
                         <tbody id="linhas"></tbody>
@@ -69,6 +70,7 @@
         </div>
     </div>
 </div>
+<script src="/painel.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>

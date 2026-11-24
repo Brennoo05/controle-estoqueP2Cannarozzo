@@ -189,9 +189,18 @@ async function abrir(nome) {
     fecharPainel(false);
     atual = nome;
     const versao = ++versaoTela;
-    const cfg = ENTIDADES[nome];
     registros = [];
     mostrarMensagem();
+    for (const item of porId('menu').children) {
+        if (item.dataset.tela === nome) item.setAttribute('aria-current', 'page');
+        else item.removeAttribute('aria-current');
+    }
+    // O Painel nao tem tabela nem cadastro: a area de trabalho da lugar ao resumo (painel.js)
+    const ehPainel = nome === TELA_PAINEL;
+    for (const id of ['acoes-titulo', 'filtros', 'caixa-tabela']) porId(id).hidden = ehPainel;
+    porId('visao-painel').hidden = !ehPainel;
+    if (ehPainel) return abrirPainelDoEstoque(versao);
+    const cfg = ENTIDADES[nome];
     porId('titulo').textContent = cfg.titulo;
     porId('novo').textContent = '+ ' + cfg.novo;
     porId('novo').disabled = false;
@@ -202,10 +211,6 @@ async function abrir(nome) {
     const filtro = porId('filtro-categoria');
     filtro.hidden = nome !== 'produtos';
     filtro.replaceChildren(new Option('Todas as categorias', ''));
-    for (const item of porId('menu').children) {
-        if (item.dataset.tela === nome) item.setAttribute('aria-current', 'page');
-        else item.removeAttribute('aria-current');
-    }
     renderizarTabela('Carregando registros…');
     try {
         const [dados, categorias] = await Promise.all([
@@ -488,7 +493,7 @@ async function sair() {
 async function iniciar() {
     usuarioLogado = await api('GET', '/api/usuarios/me');
     porId('usuario').textContent = usuarioLogado.login + ' (' + usuarioLogado.perfil + ')';
-    for (const [nome, cfg] of Object.entries(ENTIDADES)) {
+    for (const [nome, cfg] of [[TELA_PAINEL, MENU_PAINEL], ...Object.entries(ENTIDADES)]) {
         if (cfg.somenteAdmin && usuarioLogado.perfil !== 'ADMIN') continue;
         const item = botao(cfg.menu || cfg.titulo, '', () => abrir(nome));
         item.dataset.tela = nome;
@@ -509,7 +514,7 @@ async function iniciar() {
     document.addEventListener('keydown', evento => {
         if (evento.key === 'Escape') fecharPainel();
     });
-    await abrir('produtos');
+    await abrir(TELA_PAINEL);
 }
 
 iniciar().catch(erro => mostrarMensagem(erro.message, true));

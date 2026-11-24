@@ -89,3 +89,28 @@ header .btn{min-height:34px}
     .heading{gap:10px}
     .search,.filters select{flex-basis:100%;width:100%}
 }
+/* ---------- Painel ---------- */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;margin-bottom:24px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px}
+.linha-titulo{display:flex;align-items:center}
+.kpi h3{margin:0;font-size:13px;font-weight:650;color:var(--muted)}
+.kpi-valor{margin:6px 0 0;font-size:28px;font-weight:750;line-height:1.15;letter-spacing:-.02em;color:var(--deep);font-variant-numeric:tabular-nums}
+.quadros{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:22px 18px;align-items:start}
+.quadro{min-width:0}
+.quadro h2{font-size:18px;letter-spacing:-.01em}
+.quadro .linha-titulo{margin-bottom:10px}
+.quadro-largo{grid-column:1/-1}
+.quadro-vazio{margin:0;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+/* nos quadros o nome pode quebrar linha; so a ultima coluna (numero ou etiqueta) fica inteira */
+.quadro th:not(:last-child),.quadro td:not(:last-child){white-space:normal}
+.barras{list-style:none;display:grid;gap:13px;margin:0;padding:15px 16px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);font-size:13px}
+.barras li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 12px;align-items:baseline}
+.barra-nome{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trilho{grid-column:1/-1;height:8px;border-radius:4px;background:var(--sage)}
+.barra{display:block;height:100%;min-width:4px;border-radius:4px;background:var(--green)}
+/* "i" de explicacao: o balao abre ao passar o mouse, tocar ou focar pelo teclado */
+.info{position:relative;flex:none;display:inline-grid;place-items:center;width:17px;height:17px;margin-left:7px;border:1px solid currentColor;border-radius:50%;color:var(--muted);font:italic 700 11px/1 Georgia,serif;letter-spacing:0;cursor:help}
+.info::after{content:attr(data-info);display:none;position:absolute;z-index:5;top:calc(100% + 8px);left:-10px;width:max-content;max-width:250px;padding:8px 11px;border-radius:8px;background:var(--deep);color:#fff;font:400 12px/1.45 "Segoe UI",system-ui,sans-serif;text-align:left;white-space:normal;box-shadow:0 6px 18px #15261d33}
+.info.info-fim::after{left:auto;right:-10px}
+.info:hover::after,.info:focus::after{display:block}
