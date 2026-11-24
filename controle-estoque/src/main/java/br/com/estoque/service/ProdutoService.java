@@ -26,6 +26,7 @@ public class ProdutoService {
     }
 
     public Produto buscar(Long id) {
+        if (id == null) throw new RegraNegocioException("Informe o produto.");
         return repository.findById(id).orElseThrow();
     }
 

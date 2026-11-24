@@ -20,6 +20,8 @@ public class CategoriaService {
     }
 
     public Categoria buscar(Long id) {
+        // sem id (ex.: "categoria": {} no JSON) o banco lancaria um erro 500
+        if (id == null) throw new RegraNegocioException("Informe a categoria.");
         // orElseThrow lanca NoSuchElementException, que vira HTTP 404
         return repository.findById(id).orElseThrow();
     }

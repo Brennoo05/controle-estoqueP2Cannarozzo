@@ -72,6 +72,51 @@ class RegrasDeNegocioIntegracaoTest {
         assertEquals(7, estoqueDe(produto)); // nada mudou
     }
 
+    // ---------- Dados incompletos ou em formato errado viram 400 com {"erro": ...} ----------
+
+    @Test
+    void entradaSemIdDoProdutoRetorna400() throws Exception {
+        mvc.perform(post("/api/entradas").with(admin).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"produto\":{},\"quantidade\":1}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro").exists());
+    }
+
+    @Test
+    void saidaSemIdDoClienteRetorna400ENaoMexeNoEstoque() throws Exception {
+        long produto = novoProduto();
+        criar("/api/entradas", entrada(produto, "10"));
+
+        mvc.perform(post("/api/saidas").with(admin).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"produto\":{\"id\":" + produto + "},\"cliente\":{},\"quantidade\":4}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro").exists());
+
+        assertEquals(10, estoqueDe(produto));
+    }
+
+    @Test
+    void produtoSemIdDaCategoriaRetorna400() throws Exception {
+        long fornecedor = novoFornecedor();
+
+        mvc.perform(post("/api/produtos").with(admin).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Sem categoria\",\"preco\":1.0,"
+                                + "\"categoria\":{},\"fornecedor\":{\"id\":" + fornecedor + "}}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro").exists());
+    }
+
+    @Test
+    void produtoSemIdDoFornecedorRetorna400() throws Exception {
+        long categoria = criar("/api/categorias", "{\"nome\":\"Categoria de teste\"}");
+
+        mvc.perform(post("/api/produtos").with(admin).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nome\":\"Sem fornecedor\",\"preco\":1.0,"
+                                + "\"categoria\":{\"id\":" + categoria + "},\"fornecedor\":{}}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro").exists());
+    }
+
     // ---------- Apoio ----------
 
     private String entrada(long produto, String quantidade) {
