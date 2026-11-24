@@ -43,10 +43,19 @@ public class EntradaService {
     @Transactional
     public Entrada atualizar(Long id, Entrada dados) {
         Entrada entrada = buscar(id);
-        // desfaz a entrada antiga e aplica a nova
-        produtoService.removerEstoque(entrada.getProduto(), entrada.getQuantidade());
+        Produto produtoAntigo = entrada.getProduto();
         Produto novoProduto = produtoService.buscar(dados.getProduto().getId());
-        produtoService.adicionarEstoque(novoProduto, dados.getQuantidade());
+        if (novoProduto.getId().equals(produtoAntigo.getId())) {
+            // mesmo produto: aplica so a diferenca. Desfazer a entrada inteira falhava
+            // sempre que parte dela ja tinha sido vendida, ate para corrigir so a data.
+            int diferenca = dados.getQuantidade() - entrada.getQuantidade();
+            if (diferenca >= 0) produtoService.adicionarEstoque(novoProduto, diferenca);
+            else produtoService.removerEstoque(novoProduto, -diferenca);
+        } else {
+            // trocou de produto: tira do antigo e coloca no novo
+            produtoService.removerEstoque(produtoAntigo, entrada.getQuantidade());
+            produtoService.adicionarEstoque(novoProduto, dados.getQuantidade());
+        }
 
         entrada.setProduto(novoProduto);
         entrada.setQuantidade(dados.getQuantidade());
