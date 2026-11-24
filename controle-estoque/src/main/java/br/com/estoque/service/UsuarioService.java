@@ -42,6 +42,12 @@ public class UsuarioService {
 
     public Usuario atualizar(Long id, Usuario dados) {
         Usuario usuario = buscar(id);
+        // Sem nenhum ADMIN ninguem mais consegue cadastrar usuarios nem excluir registros
+        boolean deixaDeSerAdmin = usuario.getPerfil() == Usuario.Perfil.ADMIN
+                && dados.getPerfil() != Usuario.Perfil.ADMIN;
+        if (deixaDeSerAdmin && repository.countByPerfil(Usuario.Perfil.ADMIN) == 1) {
+            throw new RegraNegocioException("O sistema precisa de pelo menos um administrador.");
+        }
         usuario.setLogin(dados.getLogin());
         usuario.setPerfil(dados.getPerfil());
         // Senha em branco = mantem a senha atual
@@ -51,7 +57,13 @@ public class UsuarioService {
         return repository.save(usuario);
     }
 
-    public void excluir(Long id) {
-        repository.delete(buscar(id));
+    // loginLogado = quem esta fazendo a exclusao
+    public void excluir(Long id, String loginLogado) {
+        Usuario usuario = buscar(id);
+        // Como so ADMIN exclui, impedir a auto-exclusao tambem garante que sempre sobra um ADMIN
+        if (usuario.getLogin().equals(loginLogado)) {
+            throw new RegraNegocioException("Você não pode excluir o próprio usuário.");
+        }
+        repository.delete(usuario);
     }
 }

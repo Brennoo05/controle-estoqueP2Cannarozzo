@@ -129,6 +129,53 @@ class RegrasDeNegocioIntegracaoTest {
         assertEquals(0, estoqueDe(produto));
     }
 
+    // ---------- Protecao do administrador ----------
+
+    @Test
+    void adminNaoPodeExcluirOProprioUsuario() throws Exception {
+        long eu = idDoUsuarioLogado();
+
+        mvc.perform(delete("/api/usuarios/" + eu).with(admin))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro").exists());
+
+        mvc.perform(get("/api/usuarios/" + eu).with(admin))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void unicoAdminNaoPodeVirarUsuarioComum() throws Exception {
+        long eu = idDoUsuarioLogado();
+
+        mvc.perform(put("/api/usuarios/" + eu).with(admin).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"login\":\"admin\",\"perfil\":\"USER\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro").exists());
+
+        mvc.perform(get("/api/usuarios/" + eu).with(admin))
+                .andExpect(jsonPath("$.perfil").value("ADMIN"));
+    }
+
+    @Test
+    void adminPodeExcluirOutroAdmin() throws Exception {
+        long outro = novoUsuario("ADMIN");
+
+        mvc.perform(delete("/api/usuarios/" + outro).with(admin))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void havendoOutroAdminUmDelesPodeVirarUsuarioComum() throws Exception {
+        String login = "admin-teste-" + SEQUENCIA.incrementAndGet();
+        long outro = criar("/api/usuarios",
+                "{\"login\":\"" + login + "\",\"senha\":\"segredo123\",\"perfil\":\"ADMIN\"}");
+
+        mvc.perform(put("/api/usuarios/" + outro).with(admin).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"login\":\"" + login + "\",\"perfil\":\"USER\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.perfil").value("USER"));
+    }
+
     // ---------- Apoio ----------
 
     private String entrada(long produto, String quantidade) {
