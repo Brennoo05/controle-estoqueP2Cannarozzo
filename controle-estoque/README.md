@@ -46,7 +46,7 @@ Pré-requisitos: Java 17+ e Maven.
 mvn spring-boot:run
 ```
 
-Acesse https://controle-estoquep2cannarozzo.onrender.com/login.html e entre com:
+Acesse http://localhost:8080 (ou a versão publicada: https://controle-estoquep2cannarozzo.onrender.com) e entre com:
 
 | Login | Senha | Perfil |
 |-------|-------|--------|
