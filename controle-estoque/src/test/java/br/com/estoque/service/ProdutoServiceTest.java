@@ -9,6 +9,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -58,5 +60,36 @@ class ProdutoServiceTest {
 
         assertEquals(10, produto.getQuantidadeEstoque()); // estoque nao mudou
         verify(repository, never()).save(any());
+    }
+
+    // ===== Exclusao logica =====
+
+    @Test
+    void excluirApenasMarcaOProdutoComoInativoSemApagarNemMexerNoEstoque() {
+        when(repository.findById(1L)).thenReturn(Optional.of(produto));
+
+        service.excluir(1L);
+
+        assertFalse(produto.isAtivo());
+        assertEquals(10, produto.getQuantidadeEstoque()); // saldo preservado
+        verify(repository).save(produto);
+        verify(repository, never()).delete(any());
+        verify(repository, never()).deleteById(any());
+    }
+
+    @Test
+    void produtoInativoNaoPodeReceberMovimentacao() {
+        produto.setAtivo(false);
+        when(repository.findById(1L)).thenReturn(Optional.of(produto));
+
+        assertThrows(RegraNegocioException.class, () -> service.buscarAtivo(1L));
+    }
+
+    @Test
+    void listarTrazSomenteProdutosAtivos() {
+        service.listar();
+
+        verify(repository).findByAtivoTrue();
+        verify(repository, never()).findAll();
     }
 }

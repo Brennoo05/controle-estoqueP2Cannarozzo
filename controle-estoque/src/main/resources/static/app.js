@@ -118,6 +118,8 @@ function exibir(valor) {
 
 
 function formatar(campo, valor) {
+    // Produto excluido (exclusao logica) continua identificado no historico de Entradas e Saidas
+    if (campo === 'produto' && valor?.ativo === false) return valor.nome + ' (excluído)';
     if (campo === 'preco') {
         return Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
@@ -451,8 +453,12 @@ async function salvar(evento) {
     }
 }
 
+const CONFIRMACAO_EXCLUIR_PRODUTO = 'Tem certeza de que deseja excluir este produto? Ele será removido da lista de '
+    + 'produtos disponíveis, mas seu histórico de entradas e saídas será preservado.';
+
 async function excluir(id, acionador) {
-    if (salvando || !confirm('Excluir o registro ' + id + '?')) return;
+    const pergunta = atual === 'produtos' ? CONFIRMACAO_EXCLUIR_PRODUTO : 'Excluir o registro ' + id + '?';
+    if (salvando || !confirm(pergunta)) return;
     mostrarMensagem();
     const tela = atual;
     const versao = versaoTela;

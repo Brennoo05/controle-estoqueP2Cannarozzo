@@ -152,6 +152,28 @@ class PainelServiceTest {
     }
 
     @Test
+    void produtoExcluidoSaiDosIndicadoresDeEstoqueMasSuasVendasContinuamNoHistorico() {
+        Produto agua = produto("Agua", "2.50", 10, bebidas);
+        Produto excluido = produto("Excluido", "4.00", 3, limpeza);
+        saida(excluido, 2, hoje);
+        excluido.setAtivo(false);
+        produtos.save(excluido);
+
+        Painel painel = service.resumo();
+
+        assertThat(painel.totalProdutos()).isEqualTo(1);
+        assertThat(painel.unidadesEmEstoque()).isEqualTo(10);
+        assertThat(painel.valorEmEstoque()).isEqualByComparingTo("25.00");
+        assertThat(painel.produtosEstoqueBaixo()).isZero();
+        assertThat(painel.paraRepor()).isEmpty();
+        assertThat(painel.porCategoria()).extracting(EstoquePorCategoria::categoria).containsExactly("Bebidas");
+        // o historico de movimentacoes nao e apagado pela exclusao logica
+        assertThat(painel.unidadesSaidas()).isEqualTo(2);
+        assertThat(painel.maisVendidos()).containsExactly(new ProdutoVendido("Excluido", 2L));
+        assertThat(agua.isAtivo()).isTrue();
+    }
+
+    @Test
     void agrupaProdutosUnidadesEValorPorCategoria() {
         produto("Agua", "2.50", 10, bebidas);
         produto("Suco", "4.00", 3, bebidas);

@@ -32,7 +32,7 @@ public class SaidaService {
 
     @Transactional
     public Saida registrar(Saida saida) {
-        Produto produto = produtoService.buscar(saida.getProduto().getId());
+        Produto produto = produtoService.buscarAtivo(saida.getProduto().getId()); // produto excluido nao recebe saida
         produtoService.removerEstoque(produto, saida.getQuantidade()); // estoque DESCE (valida saldo)
 
         saida.setId(null);
@@ -45,9 +45,10 @@ public class SaidaService {
     @Transactional
     public Saida atualizar(Long id, Saida dados) {
         Saida saida = buscar(id);
+        produtoService.exigirAtivo(saida.getProduto()); // historico de produto excluido nao muda
+        Produto novoProduto = produtoService.buscarAtivo(dados.getProduto().getId());
         // devolve a quantidade antiga e retira a nova
         produtoService.adicionarEstoque(saida.getProduto(), saida.getQuantidade());
-        Produto novoProduto = produtoService.buscar(dados.getProduto().getId());
         produtoService.removerEstoque(novoProduto, dados.getQuantidade());
 
         saida.setProduto(novoProduto);
@@ -60,6 +61,7 @@ public class SaidaService {
     @Transactional
     public void excluir(Long id) {
         Saida saida = buscar(id);
+        produtoService.exigirAtivo(saida.getProduto()); // historico de produto excluido nao e apagado
         // cancelar uma venda devolve os itens ao estoque
         produtoService.adicionarEstoque(saida.getProduto(), saida.getQuantidade());
         repository.delete(saida);

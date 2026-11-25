@@ -31,7 +31,7 @@ public class EntradaService {
     // @Transactional: se algo falhar, nada e gravado (nem a entrada, nem o estoque)
     @Transactional
     public Entrada registrar(Entrada entrada) {
-        Produto produto = produtoService.buscar(entrada.getProduto().getId());
+        Produto produto = produtoService.buscarAtivo(entrada.getProduto().getId()); // produto excluido nao recebe entrada
         produtoService.adicionarEstoque(produto, entrada.getQuantidade()); // estoque SOBE
 
         entrada.setId(null);
@@ -44,7 +44,8 @@ public class EntradaService {
     public Entrada atualizar(Long id, Entrada dados) {
         Entrada entrada = buscar(id);
         Produto produtoAntigo = entrada.getProduto();
-        Produto novoProduto = produtoService.buscar(dados.getProduto().getId());
+        produtoService.exigirAtivo(produtoAntigo); // historico de produto excluido nao muda
+        Produto novoProduto = produtoService.buscarAtivo(dados.getProduto().getId());
         if (novoProduto.getId().equals(produtoAntigo.getId())) {
             // mesmo produto: aplica so a diferenca. Desfazer a entrada inteira falhava
             // sempre que parte dela ja tinha sido vendida, ate para corrigir so a data.
@@ -66,6 +67,7 @@ public class EntradaService {
     @Transactional
     public void excluir(Long id) {
         Entrada entrada = buscar(id);
+        produtoService.exigirAtivo(entrada.getProduto()); // historico de produto excluido nao e apagado
         // excluir uma entrada retira do estoque o que ela tinha colocado
         produtoService.removerEstoque(entrada.getProduto(), entrada.getQuantidade());
         repository.delete(entrada);

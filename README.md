@@ -25,6 +25,7 @@ Projeto Final — Desenvolvimento de Software II (DS-II).
 - Corrigir uma entrada aplica só a diferença entre a quantidade nova e a antiga, então dá para ajustar um lançamento mesmo depois de parte do estoque ter sido vendida. A correção é recusada se deixaria o estoque negativo.
 - Quantidade é sempre um número inteiro a partir de 1; valor quebrado é recusado, não arredondado.
 - Excluir uma entrada ou uma saída desfaz o efeito dela no estoque.
+- Excluir um produto é uma exclusão lógica: ele sai da lista de produtos disponíveis e não aceita novas entradas ou saídas, mas o histórico de movimentações e o saldo são preservados.
 - Ninguém exclui o próprio usuário, e o único administrador não pode virar usuário comum: o sistema sempre fica com pelo menos um ADMIN.
 - Dados inválidos voltam como erro 400 com a mensagem em `{"erro": "..."}`.
 

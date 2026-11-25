@@ -42,17 +42,17 @@ public class PainelService {
         BigDecimal valor = produtoRepository.somarValorEmEstoque();
 
         return new Painel(
-                produtoRepository.count(),
+                produtoRepository.countByAtivoTrue(),
                 zeroSeNulo(produtoRepository.somarUnidades()),
                 valor == null ? BigDecimal.ZERO : valor,
-                produtoRepository.countByQuantidadeEstoque(0),
+                produtoRepository.countByQuantidadeEstoqueAndAtivoTrue(0),
                 produtoRepository.contarEstoqueBaixo(estoqueMinimo),
                 estoqueMinimo,
                 DIAS_DO_PERIODO,
                 zeroSeNulo(entradaRepository.somarQuantidadeDesde(inicio)),
                 zeroSeNulo(saidaRepository.somarQuantidadeDesde(inicio)),
                 saidaRepository.maisVendidosDesde(inicio, PageRequest.of(0, QUANTOS_MAIS_VENDIDOS)),
-                produtoRepository.findByQuantidadeEstoqueLessThanOrderByQuantidadeEstoqueAscNomeAsc(estoqueMinimo),
+                produtoRepository.findByQuantidadeEstoqueLessThanAndAtivoTrueOrderByQuantidadeEstoqueAscNomeAsc(estoqueMinimo),
                 produtoRepository.estoquePorCategoria());
     }
 

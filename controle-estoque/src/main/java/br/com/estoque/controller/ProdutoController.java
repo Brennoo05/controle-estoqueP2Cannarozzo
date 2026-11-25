@@ -5,13 +5,10 @@ import br.com.estoque.service.ProdutoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/produtos")
@@ -25,7 +22,7 @@ public class ProdutoController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista todos")
+    @Operation(summary = "Lista os produtos ativos (os excluidos nao aparecem)")
     public List<Produto> listar() {
         return service.listar();
     }
@@ -51,15 +48,8 @@ public class ProdutoController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @Operation(summary = "Exclui (somente ADMIN)")
-    public ResponseEntity<Map<String, String>> excluir(@PathVariable Long id) {
-        try {
-            service.excluir(id);
-        } catch (DataIntegrityViolationException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("erro",
-                    "Não é possível excluir este produto, pois ele possui um histórico de movimentações de estoque associado. "
-                            + "A exclusão comprometeria a integridade desse histórico."));
-        }
-        return ResponseEntity.noContent().build();
+    @Operation(summary = "Exclui logicamente (somente ADMIN): o produto fica inativo e o historico e preservado")
+    public void excluir(@PathVariable Long id) {
+        service.excluir(id);
     }
 }

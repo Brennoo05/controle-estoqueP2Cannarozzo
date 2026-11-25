@@ -39,6 +39,12 @@ public class Produto {
     @JoinColumn(name = "fornecedor_id", nullable = false)
     private Fornecedor fornecedor;
 
+    // Exclusao logica: "excluir" so marca o produto como inativo. Ele continua no banco
+    // porque Entradas e Saidas apontam para ele e o historico precisa ser preservado.
+    // O "default true" faz o ddl-auto=update marcar como ativos os produtos que ja existiam.
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean ativo = true;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getNome() { return nome; }
@@ -51,4 +57,6 @@ public class Produto {
     public void setCategoria(Categoria categoria) { this.categoria = categoria; }
     public Fornecedor getFornecedor() { return fornecedor; }
     public void setFornecedor(Fornecedor fornecedor) { this.fornecedor = fornecedor; }
+    public boolean isAtivo() { return ativo; }
+    public void setAtivo(boolean ativo) { this.ativo = ativo; }
 }
