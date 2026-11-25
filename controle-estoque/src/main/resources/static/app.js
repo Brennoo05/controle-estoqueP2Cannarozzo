@@ -264,7 +264,7 @@ function renderizarTabela(mensagemVazia) {
     porId('baixar-csv').disabled = dados.length === 0;
     for (const registro of dados) {
         const linha = corpo.insertRow();
-        linha.classList.toggle('no-stock', atual === 'produtos' && registro.quantidadeEstoque === ESTOQUE_MINIMO);
+        linha.classList.toggle('no-stock', atual === 'produtos' && registro.quantidadeEstoque < ESTOQUE_MINIMO);
         for (const coluna of colunas) {
             const celula = linha.insertCell();
             const valor = registro[coluna.nome];
