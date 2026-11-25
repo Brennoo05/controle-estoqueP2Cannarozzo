@@ -20,6 +20,7 @@ public class ClienteService {
     }
 
     public Cliente buscar(Long id) {
+        if (id == null) throw new RegraNegocioException("Informe o cliente.");
         return repository.findById(id).orElseThrow();
     }
 

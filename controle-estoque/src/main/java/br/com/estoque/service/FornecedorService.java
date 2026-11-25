@@ -20,6 +20,7 @@ public class FornecedorService {
     }
 
     public Fornecedor buscar(Long id) {
+        if (id == null) throw new RegraNegocioException("Informe o fornecedor.");
         return repository.findById(id).orElseThrow();
     }
 

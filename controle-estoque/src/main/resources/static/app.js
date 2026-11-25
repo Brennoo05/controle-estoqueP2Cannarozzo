@@ -18,7 +18,7 @@ const ENTIDADES = {
         titulo: 'Entradas (compras)', menu: 'Entradas', item: 'entrada', novo: 'Nova entrada', icone: '⇩',
         campos: [
             { nome: 'produto', label: 'Produto', tipo: 'select', origem: 'produtos' },
-            { nome: 'quantidade', label: 'Quantidade', tipo: 'number' },
+            { nome: 'quantidade', label: 'Quantidade', tipo: 'number', inteiro: true },
             { nome: 'data', label: 'Data', tipo: 'date', opcional: true }
         ]
     },
@@ -27,7 +27,7 @@ const ENTIDADES = {
         campos: [
             { nome: 'produto', label: 'Produto', tipo: 'select', origem: 'produtos' },
             { nome: 'cliente', label: 'Cliente', tipo: 'select', origem: 'clientes' },
-            { nome: 'quantidade', label: 'Quantidade', tipo: 'number' },
+            { nome: 'quantidade', label: 'Quantidade', tipo: 'number', inteiro: true },
             { nome: 'data', label: 'Data', tipo: 'date', opcional: true }
         ]
     },
@@ -189,9 +189,18 @@ async function abrir(nome) {
     fecharPainel(false);
     atual = nome;
     const versao = ++versaoTela;
-    const cfg = ENTIDADES[nome];
     registros = [];
     mostrarMensagem();
+    for (const item of porId('menu').children) {
+        if (item.dataset.tela === nome) item.setAttribute('aria-current', 'page');
+        else item.removeAttribute('aria-current');
+    }
+    // O Painel nao tem tabela nem cadastro: a area de trabalho da lugar ao resumo (painel.js)
+    const ehPainel = nome === TELA_PAINEL;
+    for (const id of ['acoes-titulo', 'filtros', 'caixa-tabela']) porId(id).hidden = ehPainel;
+    porId('visao-painel').hidden = !ehPainel;
+    if (ehPainel) return abrirPainelDoEstoque(versao);
+    const cfg = ENTIDADES[nome];
     porId('titulo').textContent = cfg.titulo;
     porId('novo').textContent = '+ ' + cfg.novo;
     porId('novo').disabled = false;
@@ -202,10 +211,6 @@ async function abrir(nome) {
     const filtro = porId('filtro-categoria');
     filtro.hidden = nome !== 'produtos';
     filtro.replaceChildren(new Option('Todas as categorias', ''));
-    for (const item of porId('menu').children) {
-        if (item.dataset.tela === nome) item.setAttribute('aria-current', 'page');
-        else item.removeAttribute('aria-current');
-    }
     renderizarTabela('Carregando registros…');
     try {
         const [dados, categorias] = await Promise.all([
@@ -339,8 +344,9 @@ function criarCampo(c, registro, opcoes, tela, versao) {
         campo.type = c.tipo === 'cep' ? 'text' : (c.tipo || 'text');
         if (campo.type === 'password') campo.autocomplete = 'new-password';
         if (campo.type === 'number') {
-            campo.min = '0';
-            campo.step = 'any';
+            // quantidade e contada em unidades inteiras; o preco aceita centavos
+            campo.min = c.inteiro ? '1' : '0';
+            campo.step = c.inteiro ? '1' : 'any';
         }
         if (c.placeholder || c.tipo === 'cep') campo.placeholder = c.placeholder || 'Somente números';
         if (c.tipo === 'cep') campo.addEventListener('blur', () => buscarCep(campo, versao));
@@ -487,7 +493,7 @@ async function sair() {
 async function iniciar() {
     usuarioLogado = await api('GET', '/api/usuarios/me');
     porId('usuario').textContent = usuarioLogado.login + ' (' + usuarioLogado.perfil + ')';
-    for (const [nome, cfg] of Object.entries(ENTIDADES)) {
+    for (const [nome, cfg] of [[TELA_PAINEL, MENU_PAINEL], ...Object.entries(ENTIDADES)]) {
         if (cfg.somenteAdmin && usuarioLogado.perfil !== 'ADMIN') continue;
         const item = botao(cfg.menu || cfg.titulo, '', () => abrir(nome));
         item.dataset.tela = nome;
@@ -508,7 +514,7 @@ async function iniciar() {
     document.addEventListener('keydown', evento => {
         if (evento.key === 'Escape') fecharPainel();
     });
-    await abrir('produtos');
+    await abrir(TELA_PAINEL);
 }
 
 iniciar().catch(erro => mostrarMensagem(erro.message, true));

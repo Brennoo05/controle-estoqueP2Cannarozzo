@@ -8,19 +8,34 @@ Projeto Final — Desenvolvimento de Software II (DS-II).
 
 | Nome | GitHub |
 |------|--------|
-| Lucas Viana dos Santos | @usuario-github |
-| Nome do integrante 2 | @usuario-github |
-| Nome do integrante 3 | @usuario-github |
-| Nome do integrante 4 | @usuario-github |
+| Lucas Viana dos Santos | @iluccs |
+| Brenno Rodrigues | @Brennoo05 |
+| Murilo Novaes | @kiillerzin |
+
+## Funcionalidades
+
+- **Painel** (tela inicial): total de produtos, unidades e valor em estoque, produtos zerados ou abaixo do mínimo, unidades que entraram e saíram nos últimos 30 dias, os cinco mais vendidos, a lista para repor e o estoque por categoria. Os dados vêm de `GET /api/painel`.
+- **Cadastros** de produtos, categorias, fornecedores, clientes e usuários, com busca, filtro por categoria e exportação em CSV.
+- **Entradas e saídas** que atualizam o estoque na mesma transação.
+- **Endereço pelo CEP** nos cadastros de fornecedor e cliente (ViaCEP).
+
+### Regras de negócio
+
+- Uma saída nunca pode ser maior que o estoque disponível.
+- Corrigir uma entrada aplica só a diferença entre a quantidade nova e a antiga, então dá para ajustar um lançamento mesmo depois de parte do estoque ter sido vendida. A correção é recusada se deixaria o estoque negativo.
+- Quantidade é sempre um número inteiro a partir de 1; valor quebrado é recusado, não arredondado.
+- Excluir uma entrada ou uma saída desfaz o efeito dela no estoque.
+- Ninguém exclui o próprio usuário, e o único administrador não pode virar usuário comum: o sistema sempre fica com pelo menos um ADMIN.
+- Dados inválidos voltam como erro 400 com a mensagem em `{"erro": "..."}`.
 
 ## Tecnologias
 
 - Java 17 e Spring Boot 3.5 (Web, Data JPA, Security, Validation)
-- Hibernate / JPA com H2 (local) ou PostgreSQL (deploy)
+- Hibernate / JPA com H2 (local) ou PostgreSQL (deploy); consultas JPQL com agregação no Painel
 - Swagger / OpenAPI (springdoc)
 - Frontend em HTML, CSS e JavaScript (consumindo a API REST)
 - API externa: [ViaCEP](https://viacep.com.br)
-- Testes: JUnit 5, Mockito e MockMvc
+- Testes: JUnit 5, Mockito, MockMvc e `@DataJpaTest` (unitários, de consulta e de integração)
 - Docker (deploy)
 
 ## Como executar

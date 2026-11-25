@@ -56,7 +56,7 @@ public class UsuarioController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Exclui (somente ADMIN)")
-    public void excluir(@PathVariable Long id) {
-        service.excluir(id);
+    public void excluir(@PathVariable Long id, Principal principal) {
+        service.excluir(id, principal.getName());
     }
 }
