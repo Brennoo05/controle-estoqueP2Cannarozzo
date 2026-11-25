@@ -71,4 +71,4 @@ DB_PASSWORD=senha
 ## Links
 
 - Deploy: https://controle-estoquep2cannarozzo.onrender.com
-- Swagger:  Swagger: https://controle-estoquep2cannarozzo.onrender.com/swagger-ui.html (requer login)
+- Swagger: https://controle-estoquep2cannarozzo.onrender.com/swagger-ui.html (requer login)
