@@ -46,7 +46,7 @@ Pré-requisitos: Java 17+ e Maven.
 mvn spring-boot:run
 ```
 
-Acesse http://localhost:8080 e entre com:
+Acesse https://controle-estoquep2cannarozzo.onrender.com/login.html e entre com:
 
 | Login | Senha | Perfil |
 |-------|-------|--------|
@@ -69,5 +69,5 @@ DB_PASSWORD=senha
 
 ## Links
 
-- Deploy: https://SEU-APP.onrender.com
-- Swagger: https://SEU-APP.onrender.com/swagger-ui.html (local: http://localhost:8080/swagger-ui.html, requer login)
+- Deploy: https://controle-estoquep2cannarozzo.onrender.com
+- Swagger:  Swagger: https://controle-estoquep2cannarozzo.onrender.com/swagger-ui.html (requer login)
